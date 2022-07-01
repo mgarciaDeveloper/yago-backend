@@ -9,6 +9,9 @@ const cors = require("cors");
 
 const app = express();
 
+/* mongodb+srv://<username>:<password>@cluster0.kin8f.mongodb.net/?retryWrites=true&w=majority */
+
+
 /* app.use(
   cors({
     origin: process.env.FRONT_URL, // <-- location of the react app were connecting to. pass to .env
@@ -23,12 +26,14 @@ app.use(
     extended: true,
   })
 );
+/* app.postOUgetOUdelete("/rotas", (req,res) =>{
+funcoes...
+} ) */
 
-app.get("/", function (req, res) {
-  res.send("Hello Yago!");
+app.get("/relogio", (req, res) => {
+  let horas = new Date();
+  res.send(horas);
 });
-
-// ^---- LOGIN & LOGOUT ----^
 
 app.listen(process.env.PORT || 4000, () => {
   console.log("O servidor está conectado");
