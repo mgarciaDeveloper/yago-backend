@@ -6,11 +6,16 @@ const express = require("express");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const mongoose = require("mongoose");
 
 const app = express();
 
-/* mongodb+srv://<username>:<password>@cluster0.kin8f.mongodb.net/?retryWrites=true&w=majority */
+// Mongo DB setup
 
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
 /* app.use(
   cors({
@@ -30,9 +35,44 @@ app.use(
 funcoes...
 } ) */
 
+// collections imports
+const Product = require("./models/Products");
+const User = require("./models/Users");
+
 app.get("/relogio", (req, res) => {
   let horas = new Date();
   res.send(horas);
+});
+
+app.post("/criarLivro", (req, res) => {
+  console.log(req);
+  let newBook = new Product({
+    nome: req.body.nome,
+    custo: 15,
+    categoria: req.body.categoria,
+    destino: req.body.destino,
+  });
+
+  newBook.save((err, objetoSalvo) => {
+    if (err) {
+      //erro ao salvar (sintaxe ou configuração)
+      console.log(err);
+      res.send({
+        erro: true,
+        mensagem: "Erro! O objeto não foi salvo",
+      });
+    } else if (objetoSalvo) {
+      // o objeto foi salvo
+
+      res.send(objetoSalvo);
+    } else if (!objetoSalvo) {
+      //o objeto não foi salvo
+      res.send({
+        erro: true,
+        mensagem: "Erro! O objeto não foi salvo",
+      });
+    }
+  });
 });
 
 app.listen(process.env.PORT || 4000, () => {
