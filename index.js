@@ -8,6 +8,12 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const mongoose = require('mongoose');
 const app = express();
+const session = require("express-session");
+const flash = require("req-flash");
+const passport = require("passport");
+const MongoStore = require("connect-mongo");
+
+
 
 //database setup Mongo Db setup
 mongoose.connect(process.env.MONGO_URL),{
@@ -18,13 +24,12 @@ mongoose.connect(process.env.MONGO_URL),{
 //
 
 
-
-/* app.use(
+app.use(
   cors({
-    origin: process.env.FRONT_URL, // <-- location of the react app were connecting to. pass to .env
-    credentials: true,
+    origin:"http://192.168.0.140:3000",
+    Credentials:true,
   })
-); */
+)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
@@ -33,10 +38,68 @@ app.use(
     extended: true,
   })
 );
+app.set("trust proxy ",1);
+ app.use(
+  session({
+    cookie:process.env.DEVELOPMENT
+    ? null
+    : {secure:true,maxAge:4*60*6000,sameSite:"none"},
+    secret:process.env.SECRET,
+    saveUninitialized:false,
+    store:process.env.PORT
+    ? MongoStore.create(
+      {
+        mongoUrl:process.env.MONGO_URL
+      },
+      {
+        function(err,resposta){
+          console.log(err,resposta);
+        }
+      }
+    ):null
+  })
+ );
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(flash());
+const User = require("./models/users");
+const Product = require("./models/products");
+
+passport.use(User.createStrategy())
 
 
-const Product = require("./models/products")
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
+//findone() ira encontrar o primeiro objeto que atenda ao filtro ,ele retorna esse objeto
+User.findOne({username:process.env.ADMIN_USERNAME},(err,obj)=>{
+  if(err){
+    console.log(err)
+  }
+  else if (obj){
+    console.log(obj)
+  }
+  else if (!obj){
+    User.register(
+      {
+        username:process.env.ADMIN_USERNAME,
+        nomeDoUsuario:"yago",
+        cidade:"Rio de Janeiro",
+        telefone:21985121562
+      },
+      process.env.ADMIN_PASSWORD,
+      function(err,userRegistrado){
+        if(err){
+          console.log(err)
+        }
+        else if (userRegistrado){
+          console.log("usuario registrado com sucesso")
+        }
+      }
+    )
+  }
+
+})
 
 app.get("/horas",(req,res)=>{
   let horas = new Date()
@@ -71,7 +134,39 @@ app.get("/produtos",(req,res)=>{
   })
 })
 
+app.post("/login",(req,res,next)=>{
+  password.authenticate("local",(err,obj)=>{
+    if (err){
+      return res.send({
+        err:true,
+        mensagem:"deu erro"
+      })
+    }
+    else if(!obj){
+      return res.send({
+        err:true,
+        mensagem:"usuario nao encontrado/senha invalida"
+      })
+    }
+    else if(obj){
+        req.logIn(obj,(err)=>{
+          if(err){
+            return res.send({
+              err:true,
+              mensagem:"erro na autenticaao"
+            })
+          }
+          else {
+            return res.send({
+              err:false,
+              mensagem:"usuario cadastrado"
+            })
+          }
+        })
+    }
+  })(req,res,next);
+})
+
 app.listen(process.env.PORT || 4000,()=>{
     console.log('o servidor esta conectado');
 });
-
