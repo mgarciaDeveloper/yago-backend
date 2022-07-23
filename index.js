@@ -67,7 +67,6 @@ app.use(flash()); // ...
 var Product = require("./models/Products");
 var User = require("./models/Users");
 passport.use(User.createStrategy());
-
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
@@ -135,9 +134,50 @@ app.post("/criarProduto", (req, res) => {
   });
 });
 
-app.post("/login", (req, res) => {
-  console.log(req.body);
-  res.send("olá! Você tentou acessar a rota /login");
+app.get("/autenticado", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.send(true);
+  } else {
+    res.send(false);
+  }
+});
+
+app.post("/login", (req, res, next) => {
+  passport.authenticate("local", (err, obj) => {
+    // Verifica se na UserDB existe alguém com o username e password da pessoa que está tentando logar
+    if (err) {
+      console.log(err);
+      res.send({
+        erro: true, // -> Lá no frontend, eu vou saber se deu erro através do res.data.erro ?
+        mensagem: "Erro na hora de Logar o usuário",
+      });
+    } else if (!obj) {
+      res.send({
+        erro: true,
+        mensagem: "Usuário ou senha inválidos",
+      });
+    } else if (obj) {
+      // frontend passou username e senha corretos!
+      req.logIn(obj, (err) => {
+        if (err) {
+          res.send({
+            erro: true,
+            mensagem: "Erro na hora de autenticar Usuário",
+          });
+        } else {
+          res.send({
+            erro: false,
+            mensagem: "Usuário logado com sucesso!",
+            data: null,
+          });
+        }
+      });
+    }
+  })(req, res, next);
+});
+
+app.post("/rota", (req, res) => {
+  //função
 });
 
 app.listen(process.env.PORT || 4000, () => {
