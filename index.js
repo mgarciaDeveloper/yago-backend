@@ -46,15 +46,15 @@ app.use(
     saveUninitialized: false,
     store: process.env.PORT
       ? MongoStore.create(
-          // pede onde criar e uma callback function
-          {
-            mongoUrl: process.env.MONGO_URL,
-          },
-          function (err, resposta) {
-            //espaço para uma callback function
-            console.log(err, resposta);
-          }
-        )
+        // pede onde criar e uma callback function
+        {
+          mongoUrl: process.env.MONGO_URL,
+        },
+        function (err, resposta) {
+          //espaço para uma callback function
+          console.log(err, resposta);
+        }
+      )
       : null,
   })
 );
@@ -135,11 +135,9 @@ app.post("/criarProduto", (req, res) => {
 });
 
 app.get("/autenticado", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.send(true);
-  } else {
-    res.send(false);
-  }
+
+  let isAuth = req.isAuthenticated(); //Verifica se o usuário tentando acessar essa porta está autenticado
+  res.send(isAuth);
 });
 
 app.post("/login", (req, res, next) => {
@@ -176,9 +174,26 @@ app.post("/login", (req, res, next) => {
   })(req, res, next);
 });
 
-app.post("/rota", (req, res) => {
-  //função
+app.post("/logout", (req, res) => {
+  req.logOut((err) => {
+    if (err) {
+      res.send({
+        erro: true,
+        mensagem: "Usuário não pode ser deslogado!",
+        data: null,
+      });
+    } else {
+      res.send({
+        erro: false,
+        mensagem: "Usuário deslogado com sucesso!",
+        data: null,
+      });
+    }
+  });
 });
+
+
+
 
 app.listen(process.env.PORT || 4000, () => {
   console.log("O servidor está conectado");
