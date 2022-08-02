@@ -135,10 +135,16 @@ app.post("/criarProduto", (req, res) => {
 });
 
 app.get("/autenticado", (req, res) => {
-
-  let isAuth = req.isAuthenticated(); //Verifica se o usuário tentando acessar essa porta está autenticado
-  res.send(isAuth);
+  res.send(req.isAuthenticated()); //Verifica se o usuário tentando acessar essa porta está autenticado
 });
+
+app.get('mostrarTodosOsprodutos', (req, res) => {
+  if (req.isAuthenticated()) { //pega o cookie do sessão e verfica com o MongoStore
+    // converso com o DB
+  } else {
+    res.send(false)
+  }
+})
 
 app.post("/login", (req, res, next) => {
   passport.authenticate("local", (err, obj) => {
