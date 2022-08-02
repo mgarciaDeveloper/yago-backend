@@ -135,7 +135,7 @@ app.get("/produtos",(req,res)=>{
 })
 
 app.post("/login",(req,res,next)=>{
-  password.authenticate("local",(err,obj)=>{
+  passport.authenticate("local",(err,obj)=>{
     if (err){
       return res.send({
         err:true,
@@ -166,6 +166,32 @@ app.post("/login",(req,res,next)=>{
     }
   })(req,res,next);
 })
+app.get("/auth",(req,res)=>{
+  res.send(req.isAuthenticated())
+})
+
+app.post("/logout",(req,res)=>{
+  req.logOut((err)=>{
+    if(err){
+      res.send({
+        erro:true,
+        mensagem:"usuario preso na matrix",
+        data:null
+      })
+    }
+    else{
+      res.send({
+        erro:false,
+        mensagem:"usuario derrotou as maquinas"
+      })
+    }
+  })
+})
+app.post("/auth",(req,res)=>{
+let isAuth = req.isAutheticated()
+req.send(isAuth)
+})
+
 
 app.listen(process.env.PORT || 4000,()=>{
     console.log('o servidor esta conectado');
