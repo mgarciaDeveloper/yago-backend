@@ -13,23 +13,19 @@ const flash = require("req-flash");
 const passport = require("passport");
 const MongoStore = require("connect-mongo");
 
-
-
 //database setup Mongo Db setup
-mongoose.connect(process.env.MONGO_URL),{
+
+mongoose.connect(process.env.MONGO_URL,{
   useNewUrlParser : true,
   useUnifiedTopology:true,
-};
-
-//
-
+});
 
 app.use(
   cors({
     origin:"http://192.168.0.140:3000",
-    Credentials:true,
+    credentials:true,
   })
-)
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
@@ -38,49 +34,60 @@ app.use(
     extended: true,
   })
 );
+
 app.set("trust proxy ",1);
- app.use(
+app.use(
   session({
     cookie:process.env.DEVELOPMENT
     ? null
     : {secure:true,maxAge:4*60*6000,sameSite:"none"},
     secret:process.env.SECRET,
+    resave:false,
     saveUninitialized:false,
     store:process.env.PORT
     ? MongoStore.create(
+       // pede onde criar e uma callback function
       {
         mongoUrl:process.env.MONGO_URL
       },
-      {
-        function(err,resposta){
+      function(err,resposta){
+          //espaço para uma callback function
           console.log(err,resposta);
         }
-      }
-    ):null
+    )
+    :null
   })
  );
+ 
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
-const User = require("./models/users");
-const Product = require("./models/products");
 
+// collections imports
+var Product = require("./models/products");
+var User = require("./models/users");
 passport.use(User.createStrategy())
-
-
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-//findone() ira encontrar o primeiro objeto que atenda ao filtro ,ele retorna esse objeto
+app.get("/horas",(req,res)=>{
+  let horas = new Date();
+  res.send(horas);
+})
+
+// objetos estão dentro de coleções no banco de dados.
+// Vamos criar o ADMIN!
 User.findOne({username:process.env.ADMIN_USERNAME},(err,obj)=>{
+  //findone() ira encontrar o primeiro objeto que atenda ao filtro ,ele retorna esse objeto
   if(err){
-    console.log(err)
+    console.log(err);
   }
   else if (obj){
     console.log(obj)
   }
   else if (!obj){
     User.register(
+       // irei registrar um usuário no DB
       {
         username:process.env.ADMIN_USERNAME,
         nomeDoUsuario:"yago",
@@ -98,12 +105,6 @@ User.findOne({username:process.env.ADMIN_USERNAME},(err,obj)=>{
       }
     )
   }
-
-})
-
-app.get("/horas",(req,res)=>{
-  let horas = new Date()
-  return res.send(horas)
 })
 
 app.get("/produtos",(req,res)=>{
@@ -113,6 +114,7 @@ app.get("/produtos",(req,res)=>{
     destination:'lojadochico',
     category:"filme"
   });
+
   newobject.save((err,savedObject)=>{
     if(err){
       res.send({
@@ -132,20 +134,27 @@ app.get("/produtos",(req,res)=>{
     }
 
   })
+
 })
 
-app.post("/login",(req,res,next)=>{
+app.get("/auth",(req,res)=>{
+  res.send(req.isAuthenticated())
+});
+
+app.post("/login", (req,res,next) => {
   passport.authenticate("local",(err,obj)=>{
+    // Verifica se na UserDB existe alguém com o username e password da pessoa que está tentando logar
     if (err){
+      console.log(err);
       return res.send({
-        err:true,
-        mensagem:"deu erro"
-      })
+        erro:true,// -> Lá no frontend, eu vou saber se deu erro através do res.data.erro ?
+        mensagem:"Erro na hora de Logar o usuário",
+      });
     }
     else if(!obj){
       return res.send({
-        err:true,
-        mensagem:"usuario nao encontrado/senha invalida"
+        erro:true,
+        mensagem:"Usuário ou senha inválidos",
       })
     }
     else if(obj){
@@ -153,22 +162,20 @@ app.post("/login",(req,res,next)=>{
           if(err){
             return res.send({
               err:true,
-              mensagem:"erro na autenticaao"
+              mensagem:"Erro na hora de autenticar Usuário",
             })
           }
           else {
             return res.send({
               err:false,
-              mensagem:"usuario cadastrado"
+              mensagem:"Usuário logado com sucesso!",
+              data: null,
             })
           }
         })
     }
   })(req,res,next);
-})
-app.get("/auth",(req,res)=>{
-  res.send(req.isAuthenticated())
-})
+});
 
 app.post("/logout",(req,res)=>{
   req.logOut((err)=>{
@@ -182,16 +189,20 @@ app.post("/logout",(req,res)=>{
     else{
       res.send({
         erro:false,
-        mensagem:"usuario derrotou as maquinas"
+        mensagem:"usuario derrotou as maquinas",
+        data:null,
       })
     }
   })
 })
-app.post("/auth",(req,res)=>{
-let isAuth = req.isAutheticated()
-req.send(isAuth)
-})
 
+app.get('mostrarTodosOsprodutos', (req, res) => {
+  if (req.isAuthenticated()) { //pega o cookie do sessão e verfica com o MongoStore
+    // converso com o DB
+  } else {
+    res.send(false)
+  }
+})
 
 app.listen(process.env.PORT || 4000,()=>{
     console.log('o servidor esta conectado');
